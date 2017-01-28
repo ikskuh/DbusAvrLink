@@ -4,6 +4,7 @@ FREQ=20000000
 
 FLAGS=-O3 -mmcu=$(MCU) -DF_CPU=$(FREQ)LL -I../include
 
+all:
 
 %: %.hex
 	
