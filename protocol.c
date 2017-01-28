@@ -2,12 +2,13 @@
 #include <stdint.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <stdbool.h>
 
 #define NULL 0
 
 #define USE_BINARY_PROTOCOL
 // #define USE_SEND_ECHO
-#define SPY_ON_WIRE
+// #define SPY_ON_WIRE
 
 void delay_ms(unsigned time)
 {
