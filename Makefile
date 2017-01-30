@@ -2,9 +2,14 @@ TTY=/dev/ttyUSB0
 MCU=atmega32
 FREQ=20000000
 
-FLAGS=-O3 -mmcu=$(MCU) -DF_CPU=$(FREQ)LL -I../include
+FLAGS=-Wall -O3 -mmcu=$(MCU) -DF_CPU=$(FREQ)LL -I../include
 
-all: protocol
+all: test.elf
+
+
+test.elf: test.o usart.o dbus.o
+	avr-gcc $(FLAGS) -o $@ $^
+	avr-size -C --mcu=$(MCU) $@
 
 %: %.hex
 	
