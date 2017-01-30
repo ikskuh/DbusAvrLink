@@ -56,3 +56,10 @@ bool DBUS_Send(uint8_t value);
  * @returns       The byte received.
  */
 uint8_t DBUS_Receive(bool * success);
+
+/**
+ * Tries to spy a transmittion of a byte on dbus connection.
+ * @param success A pointer to a variable that tells if the receiption was successful or not. If NULL, no result will be written.
+ * @returns       The byte received.
+ */
+uint8_t DBUS_Spy(bool * success);
