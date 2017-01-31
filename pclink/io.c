@@ -27,7 +27,7 @@ static void readabs(int fd, void * buffer, size_t nBytes)
 			error_message("Failed to read stuff from fd=%d\n", fd);
 			return;
 		}
-		buffer += len;
+		ptr += len;
 		i += len;
 	}
 }

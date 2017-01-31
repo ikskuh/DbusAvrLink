@@ -32,7 +32,7 @@ void transmit()
 		0x00,
 	};
 	
-	error_message("Trying to send Str1\n");
+	error_message("Trying to send prgmABC\n");
 	
 	// Query if we have a calc at the other side... :)
 	sendPacket(0x83, 0x68, NULL, 0);

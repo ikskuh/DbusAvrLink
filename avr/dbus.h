@@ -23,12 +23,12 @@
 /**
  * Pin mask of the pin that is connected to the red cable.
  */
-#define DBUS_RED   (1<<PA1)
+#define DBUS_RED   (1<<PA4)
 
 /**
  * Pin mask of the pin that is connected to the white cable.
  */
-#define DBUS_WHITE (1<<PA0)
+#define DBUS_WHITE (1<<PA6)
 
 
 

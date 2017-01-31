@@ -5,7 +5,8 @@
 
 #include "io.h"
 
-#define error_message(...) fprintf(stderr, __VA_ARGS__)
+#define error_message(...) fprintf(stderr, "[ERR] " __VA_ARGS__)
+#define LOG(...)   fprintf(stderr, "[LOG] " __VA_ARGS__)
 
 void dumpHeader(struct varheader const * header);
 

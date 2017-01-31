@@ -4,9 +4,8 @@
 
 void DBUS_Initialize()
 {
-	DBUS_PORT = DBUS_MASK;
-	PORTA &= ~DBUS_MASK;
-	DDRA &= ~DBUS_MASK;
+	DBUS_PORT &= ~DBUS_MASK;  // Set to "low"
+	DBUS_DIR  &= ~DBUS_MASK; // but Input
 }
 
 bool DBUS_CanReceive()

@@ -91,8 +91,10 @@ int main()
 	
 #ifndef USE_BINARY_PROTOCOL
 	uint8_t rstate = 0;
-	uint8_t tmvalue = 0;
+	uint8_t value = 0;
 #endif
+
+	DDRB = (DBUS_RED | DBUS_WHITE);
 	
 	while(1)
 	{
@@ -138,7 +140,7 @@ int main()
 					case 1: // Receive LSB
 						value |= val;
 						rstate = 0;
-						send(value);
+						DBUS_Send(value);
 						break;
 				}
 			}
@@ -151,5 +153,5 @@ int main()
 
 ISR (TIMER0_OVF_vect)
 {
-	PORTB = ~(PINA & 3);
+	PORTB = ~PINA;
 }
