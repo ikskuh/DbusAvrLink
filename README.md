@@ -19,6 +19,21 @@ The current implementation provides two modes of operation:
 Each mode of operation is a synchronous mode with which only blocking
 communication can be achieved.
 
+## `pclink` Toolset
+The folder `pclink` contains some tools that implement a basic
+calculator communication toolset for sending and receiving data
+as well as transmitting programs in *Silent Mode* (planned).
+
+### `send`
+**Planned:** `send` will transfer one or more files to the calculator.
+
+### `receive`
+**Planned:** `receive` will receive one or more transmissions from the
+calculator and store them into a file.
+
+### `ls`
+**Planned:** `ls` will list the calculators directory contents.
+
 ## See Also
 
 - [Link Protocol Guide](http://merthsoft.com/linkguide/index.html)
