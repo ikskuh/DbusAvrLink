@@ -35,3 +35,4 @@
 # Program FIles
 pclink/receive
 pclink/send
+*.8x?
