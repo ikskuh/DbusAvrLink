@@ -55,6 +55,95 @@ void dumpPacket(struct packet const * packet);
 
 void dumpSafeString(char const * str, uint16_t len);
 
+void transmit()
+{
+	bool success;
+	
+	struct packet packet;
+	
+	struct{
+		uint16_t size;
+		uint8_t msg[16];
+	} msg = {
+		0x0010,
+		"0123456789ABCDEF",
+	};
+	
+	struct varheader header =
+	{
+		msg.size + 2,
+		0x05, // Program
+		{ 'A', 'B', 'C', 0x00 },
+		0x00,
+		0x00,
+	};
+	
+	int state = 0;
+	
+	error_message("Trying to send Str1\n");
+	
+	// Query if we have a calc at the other side... :)
+	sendPacket(0x83, 0x68, NULL, 0);
+	
+	if(receivePacket(&packet) == false) {
+		error_message("Failed to receive packet.\n");
+		return;
+	}
+	if(packet.machine != 0x73 || packet.command != 0x56) {
+		error_message("No RDY-ACK\n");
+		return;
+	}
+	
+	sendPacket(0x73, 0x06, &header, sizeof header);
+	
+	if(receivePacket(&packet) == false) {
+		error_message("Failed to receive packet.\n");
+		return;
+	}
+	if(packet.command != 0x56) {
+		error_message("No VAR-ACK\n");
+		return;
+	}
+	
+	if(receivePacket(&packet) == false) {
+		error_message("Failed to receive packet.\n");
+		return;
+	}
+	if(packet.command != 0x09) {
+		error_message("No VAR-CTS\n");
+		return;
+	}
+	// ACK-CTS
+	sendPacket(0x73, 0x56, NULL, 0);
+	
+	// Send Data here
+	sendPacket(0x73, 0x15, &msg, sizeof msg);
+	
+	if(receivePacket(&packet) == false) {
+		error_message("Failed to receive packet.\n");
+		return;
+	}
+	if(packet.command != 0x56) {
+		error_message("No DATA-ACK\n");
+		return;
+	}
+	
+	
+	// End of Transmittion
+	sendPacket(0x73, 0x92, NULL, 0);
+	
+	if(receivePacket(&packet) == false) {
+		error_message("Failed to receive packet.\n");
+		return;
+	}
+	if(packet.command != 0x56) {
+		error_message("No EOT-ACK\n");
+		return;
+	}
+	
+	error_message("Success!\n");
+}
+
 int main(int argc, char ** argv)
 {
 	char const * portName = "/dev/ttyUSB1";
@@ -69,124 +158,7 @@ int main(int argc, char ** argv)
 	set_interface_attribs (serialPort, B9600, 0);  // set speed to 115,200 bps, 8n1 (no parity)
 	set_blocking (serialPort, 1);
 	
-	bool success;
-	
-	struct packet packet;
-	
-	int state = 0;
-	
-	// Query if we have a calc at the other side... :)
-	// sendPacket(0x83, 0x68, NULL, 0);
-	
-	while(true)
-	{
-		printf("wait...");
-		success = receivePacket(&packet);
-		
-		printf("Packet:\n");
-		dumpPacket(&packet);
-		
-		switch(packet.command) {
-			case 0x06:
-			case 0x88:
-			case 0xA2:
-			case 0xC9:
-				printf("Var Header:\n");
-				dumpHeader(packet.data);
-				break;
-		}
-		
-		if(success) {
-			printf("Success :)\n");
-			
-			switch(packet.command)
-			{
-				case 0x68: // CHECK RDY
-					// Let's say we are an TI83+ :)
-					sendPacket(0x73, 0x56, NULL, 0);
-					break;
-				case 0x06: // Var Header
-				{
-					printf("Got VAR HDR, now ACK, CTS\n");
-					// Accept the variable header by saying:
-					// ACK, CTS
-					sendPacket(0x73, 0x56, NULL, 0);
-					sendPacket(0x73, 0x09, NULL, 0);
-					break;
-				}
-				case 0x09: // CTS
-				{
-					if (state == 2) {
-						// yay, now send some data
-						printf("Send data!\n");
-						char const * msg = "ABCDEF0123456789";
-						
-						sendPacket(
-							0x73,
-							0x15,
-							msg,
-							16);
-					} else {
-						error_message("CTS in invalid state!\n");
-					}
-					break;
-				}
-				case 0x92: // End Of transmittion
-				{
-					// ACK this shit
-					sendPacket(0x73, 0x56, NULL, 0);
-					break; 
-				}
-				case 0x15: // DATA
-				{
-					printf("File Contents:\n");
-					printf("'");
-					dumpSafeString(packet.data, packet.length);
-					printf("'\n");
-				
-					// ACK Packet
-					sendPacket(0x73, 0x56, NULL, 0);
-					break;
-				}
-				case 0x56: // ACK
-					// Answer ACK with CTS
-					break;
-					switch(state++)
-					{
-						case 0: // We got a "RDY" calc
-						{
-							printf("Send header!\n");
-							
-							struct varheader hdr = {
-								0x0010,
-								0x05,
-								"CODE\0\0\0\0",
-								0x00,
-								0x00
-							};
-							
-							sendPacket(0x73, 0x06, &hdr, sizeof hdr);
-							
-							break;
-						}
-						case 1:
-						{
-							// We got an ACK for the receiption of our header.
-							// just be happy
-							break;
-						}
-						default:
-							error_message("Unsupported state: %d\n", state - 1);
-							break;
-					}
-					break;
-			}
-			
-		} else {
-			printf("Failed :(\n");
-		}
-		if(packet.data) free(packet.data);
-	}
+	transmit();
 	
 	close(serialPort);
 }

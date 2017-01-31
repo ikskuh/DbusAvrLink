@@ -14,7 +14,7 @@
 
 #define error_message(...) fprintf(stderr, __VA_ARGS__)
 
-// #define VERBOSE
+#define VERBOSE
 
 int set_interface_attribs (int fd, int speed, int parity);
 
@@ -76,7 +76,9 @@ int main(int argc, char ** argv)
 	struct packet packet;
 	
 	printf("Waiting...\n");
-		
+	
+	
+	
 	while(true)
 	{
 		success = receivePacket(&packet);
@@ -570,7 +572,7 @@ static char const * normalTokens[256] =
 	"While ", // 194
 	"Repeat ", // 195
 	"For(", // 196
-	"End", // 197
+	"End", // 197g
 	"Return", // 198
 	"Lbl ", // 199
 	"Goto ", // 200
