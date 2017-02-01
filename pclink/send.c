@@ -5,6 +5,8 @@
 
 #include <string.h>
 #include <signal.h>
+#include <unistd.h>
+#include <ctype.h>
 
 #include "tokens.h"
 #include "debug.h"
@@ -137,11 +139,54 @@ void transmit(struct ti83f_file * file)
 int main(int argc, char ** argv)
 {
 	char const * portName = "/dev/ttyUSB1";
-	char const * sendFile = "testgroup.8xg";
+	
+	int c;
+	while ((c = getopt (argc, argv, "hp:")) != -1)
+	{
+		switch (c)
+		{
+		case 'h':
+			printf("%s [-p serialPort] file\n", argv[0]);
+			exit(EXIT_SUCCESS);
+		case 'p':
+			portName = optarg;
+			break;
+		case '?':
+			if (optopt == 'c')
+				fprintf (stderr, "Option -%c requires an argument.\n", optopt);
+			else if (isprint (optopt))
+				fprintf (stderr, "Unknown option `-%c'.\n", optopt);
+			else
+				fprintf (stderr,
+					"Unknown option character `\\x%x'.\n",
+					optopt);
+			exit(EXIT_FAILURE);
+		default:
+			abort ();
+		}
+	}
+	
+	if(optind == argc) {
+		fprintf(stderr, "Input file required!\n");
+		exit(EXIT_FAILURE);
+	}
+	
+	if(optind < (argc - 1)) {
+		fprintf(stderr, "Only one file is allowed.\n");
+		exit(EXIT_FAILURE);
+	}
+	
+	char const * sendFile =  argv[optind];
+	
 	
 	struct ti83f_file * file;
 	
 	FILE * f = fopen(sendFile, "rb");
+	if(f == NULL) {
+		error_message("Could not open %s\n", sendFile);
+		exit(EXIT_FAILURE);
+	}
+	
 	file = ti83f_load(f);
 	fclose(f);
 	

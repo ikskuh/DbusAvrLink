@@ -5,6 +5,7 @@
 
 #include <string.h>
 #include <signal.h>
+#include <ctype.h>
 
 #include "tokens.h"
 #include "debug.h"
@@ -68,11 +69,12 @@ static void list()
 			char name[128];
 			detokenize(name, h->name, 8);
 			
+			int flags = 0;
+			
 			if(h->type2 & 0x80) {
-				printf("a");
-			} else {
-				printf("-");
+				flags |= 0x01; // Set archived
 			}
+			
 			char const * type = "<unknown>";
 			switch(h->type)
 			{
@@ -82,7 +84,7 @@ static void list()
 				case 0x03: type = "y-var"; break;
 				case 0x04: type = "str"; break;
 				case 0x05: type = "pgm"; break;
-				case 0x06: type = "pgm-l"; break;
+				case 0x06: type = "pgm"; flags |= 0x02; break; // set protected flag
 				case 0x07: type = "pic"; break;
 				case 0x08: type = "gdb"; break;
 				case 0x0C: type = "cplx"; break;
@@ -91,7 +93,15 @@ static void list()
 				case 0x17: type = "grp"; break;
 			}
 			
-			printf("\t%s\t%s\n", type, name);
+			char flagstr[] = "ap";
+			for(int i = 0; i < 2; i++) {
+				if(flags & (1<<i)) {
+					continue;
+				}
+				flagstr[i] = '-';
+			}
+			
+			printf("%s\t%s\t%s\n", flagstr, type, name);
 		}
 	
 		ack();
@@ -102,6 +112,32 @@ static void list()
 int main(int argc, char ** argv)
 {
 	char const * portName = "/dev/ttyUSB1";
+	
+	int c;
+	while ((c = getopt (argc, argv, "hp:")) != -1)
+	{
+		switch (c)
+		{
+		case 'h':
+			printf("%s [-p serialPort]\n", argv[0]);
+			exit(EXIT_SUCCESS);
+		case 'p':
+			portName = optarg;
+			break;
+		case '?':
+			if (optopt == 'c')
+				fprintf (stderr, "Option -%c requires an argument.\n", optopt);
+			else if (isprint (optopt))
+				fprintf (stderr, "Unknown option `-%c'.\n", optopt);
+			else
+				fprintf (stderr,
+					"Unknown option character `\\x%x'.\n",
+					optopt);
+			exit(EXIT_FAILURE);
+		default:
+			abort ();
+		}
+	}
 	
 	serialPort = ttyOpen (portName, B9600);
 	if(serialPort < 0) {
