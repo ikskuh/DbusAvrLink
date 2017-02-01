@@ -30,19 +30,28 @@ struct raw_ti83f_entry
 	uint16_t length2;
 }  __attribute__((packed));
 
-int main(int argc, char ** argv)
+static uint16_t calculateChecksum(void const * mem, size_t len)
 {
-	FILE * f = fopen("testgroup.8xg", "rb");
-	
-	struct ti83f_file * file = ti83f_load(f);
-	if(file != NULL) {
-		LOG("Success!\n");
-	} else {
-		LOG("Failure!\n");
+	uint16_t cs = 0;
+	uint8_t const * data = mem;
+	for(size_t i = 0; i < len; i++) {
+		cs += data[i];
 	}
-	ti83f_release(file);
-	
-	fclose(f);
+	return cs;
+}
+
+static int freadcs(void * ptr, size_t a, size_t b, FILE * f, uint16_t * cs)
+{
+	int r = fread(ptr, a, b, f);
+	*cs += calculateChecksum(ptr, r);
+	return r;
+}
+
+static int fwritecs(void * ptr, size_t a, size_t b, FILE * f, uint16_t * cs)
+{
+	int r = fwrite(ptr, a, b, f);
+	*cs += calculateChecksum(ptr, r);
+	return r;
 }
 
 struct ti83f_file * ti83f_load(FILE * stream)
@@ -61,10 +70,11 @@ struct ti83f_file * ti83f_load(FILE * stream)
 	file->length = 0;
 	file->entries = NULL;
 	
+	uint16_t checksum = 0;
 	for(int counter = 0; counter < header.length; )
 	{
 		struct raw_ti83f_entry entry;
-		counter += fread(&entry, 1, sizeof entry, stream);
+		counter += freadcs(&entry, 1, sizeof entry, stream, &checksum);
 		
 		if(entry.header != 0x0B && entry.header != 0x0D) {
 			error_message("Invalid entry header: %d\n", (int)entry.header);
@@ -88,7 +98,11 @@ struct ti83f_file * ti83f_load(FILE * stream)
 		file->entries[file->length - 1].data = malloc(entry.length);
 		file->entries[file->length - 1].flags = TI83F_AUTORELEASE;
 		file->entries[file->length - 1].size = entry.length;
-		counter += fread(file->entries[file->length - 1].data, 1, entry.length, stream);
+		counter += freadcs(
+			file->entries[file->length - 1].data, 
+			1, entry.length, 
+			stream,
+			&checksum);
 		
 		if(entry.flags & 0x80) {
 			file->entries[file->length - 1].flags |= TI83F_ARCHIVED;
@@ -98,11 +112,70 @@ struct ti83f_file * ti83f_load(FILE * stream)
 	uint16_t checksumFile;
 	fread(&checksumFile, 1, sizeof checksumFile, stream);
 	
-	printf("Checksum: %04X\n", (int)checksumFile);
+	if(checksum != checksumFile) 
+	{
+		error_message("Checksum mismatch: %04X ≠ %04X\n", checksum, checksumFile);
+	}
 	
 	return file;
 }
 
+void ti83f_store(FILE * stream, struct ti83f_file const * file)
+{
+	if(stream == NULL) {
+		return;
+	}
+	if(file == NULL) {
+		return;
+	}
+	
+	struct raw_ti83f header;
+	memcpy(header.sig, signature, sizeof signature);
+	memset(header.comment, 0, sizeof header.comment);
+	strncpy(header.comment, file->comment, 42);
+	
+	header.length = 0;
+	for(uint32_t i = 0; i < file->length; i++)
+	{
+		if(file->entries[i].data == NULL || file->entries[i].size == 0) {
+			continue;
+		}
+		header.length += sizeof(struct raw_ti83f_entry);
+		header.length += file->entries[i].size;
+	}
+	
+	if(header.length == 0) {
+		error_message("No data to write\n");
+		return;
+	}
+	
+	fwrite(&header, 1, sizeof header, stream);
+	
+	uint16_t checksum = 0;
+	for(uint32_t i = 0; i < file->length; i++)
+	{
+		if(file->entries[i].data == NULL || file->entries[i].size == 0) {
+			continue;
+		}
+		
+		struct ti83f_entry * e = &file->entries[i];
+		struct raw_ti83f_entry entry;
+		
+		entry.header = 0x0D;
+		entry.length = e->size;
+		entry.type = e->type;
+		memcpy(entry.name, e->name, 8);
+		entry.version = 0;
+		entry.flags = (e->flags & TI83F_ARCHIVED) ? 0x80 : 0x00;
+		entry.length2 = e->size;
+		
+		fwritecs(&entry, 1, sizeof entry, stream, &checksum);
+	
+		fwritecs(e->data, 1, e->size, stream, &checksum);
+	}
+	
+	fwrite(&checksum, 1, sizeof checksum, stream);
+}
 
 struct ti83f_file * ti83f_new(uint32_t length)
 {
@@ -145,3 +218,27 @@ void ti83f_release(struct ti83f_file * file)
 	free(file->entries);
 	free(file);
 }
+
+
+
+/*
+// Test routine, should output a binary equivalent file.
+int main(int argc, char ** argv)
+{
+	FILE * f = fopen("run.8xp", "rb");
+	
+	struct ti83f_file * file = ti83f_load(f);
+	if(file != NULL) {
+		LOG("Success!\n");
+	} else {
+		LOG("Failure!\n");
+	}
+	fclose(f);
+	
+	f = fopen("run2.8xp", "wb");
+	ti83f_store(f, file);
+	fclose(f);
+	
+	ti83f_release(file);
+}
+*/
