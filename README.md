@@ -34,6 +34,24 @@ calculator and store them into a file.
 ### `ls`
 **Planned:** `ls` will list the calculators directory contents.
 
+## `calclink` Toolset
+
+### `send`
+A small tool for the TI83+ that allows sending bytes from the calculators to
+another device.
+
+**API**:
+
+`prgmSEND` takes the value to send in `Ans`. It can either be a `real` value,
+the a single byte will be sent. If `Ans` is a `string`, it will be interpreted
+as a byte array and each byte will be sent. `Ans` can also be a list, then every
+list entry will be taken as a single byte and beeing sent.
+
+After sending, `prgmSEND` will put the number of successfully bytes sent into `Ans`.
+If it is zero, the transmission failed.
+
+### `receive`
+
 ## See Also
 
 - [Link Protocol Guide](http://merthsoft.com/linkguide/index.html)
