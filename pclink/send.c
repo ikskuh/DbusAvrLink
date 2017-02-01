@@ -62,6 +62,7 @@ void transmit(struct ti83f_file * file)
 		
 		LOG("Wait for CTS...\n");
 		
+		int mode = 0;
 		do
 		{
 			if(receivePacket(&packet) == false) {
@@ -70,26 +71,49 @@ void transmit(struct ti83f_file * file)
 			}
 			LOG("Got packet(%02X)\n", packet.command);
 			if(packet.command == 0x09) {
+				mode = 1; // transmit
 				break;
 			}
+			
+			if(packet.command == 0x36) {
+				// SKIP/EXIT
+				uint8_t code = *((uint8_t*)packet.data);
+				LOG("Rejection Code: %02X\n",code);
+				if(code == 0x02) {
+					mode = 2; // SKIP
+					break;
+				}
+				if(code == 0x01) {
+					mode = 3; // QUIT
+					break;
+				}
+			}
+			
 			error_message("No VAR-CTS\n");
-		} while(true);
+		} while(mode == 0);
 		
 		// ACK-CTS
 		sendPacket(0x73, 0x56, NULL, 0);
 		
-		LOG("Send data...\n");
-		
-		// Send Data here
-		sendPacket(0x73, 0x15, entry->data, entry->size);
-		
-		if(receivePacket(&packet) == false) {
-			error_message("Failed to receive packet.\n");
-			return;
+		if(mode == 1) // SEND
+		{
+			LOG("Send data...\n");
+			
+			// Send Data here
+			sendPacket(0x73, 0x15, entry->data, entry->size);
+			
+			if(receivePacket(&packet) == false) {
+				error_message("Failed to receive packet.\n");
+				return;
+			}
+			if(packet.command != 0x56) {
+				error_message("No DATA-ACK\n");
+				return;
+			}
 		}
-		if(packet.command != 0x56) {
-			error_message("No DATA-ACK\n");
-			return;
+		else if (mode == 3) // QUIT
+		{
+			break;
 		}
 	}
 	
@@ -113,7 +137,7 @@ void transmit(struct ti83f_file * file)
 int main(int argc, char ** argv)
 {
 	char const * portName = "/dev/ttyUSB1";
-	char const * sendFile = "run.8xp";
+	char const * sendFile = "testgroup.8xg";
 	
 	struct ti83f_file * file;
 	
