@@ -38,3 +38,5 @@ pclink/send
 *.8x?
 ti83f
 ls
+*.8xp
+*.lst
