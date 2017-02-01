@@ -44,8 +44,6 @@ calculator and store them into a file.
 The project isn't completed yet, the target is to create a C and C++ API
 for the D-Bus protocol with synchronous and asynchronous IO.
 
-- Create the sychronous C API
-	- Clean up protocol.c and split up the project into several files
 - Create asynchronous C API
 	- Create a timer-based approach for asynchronous IO
 - Create protocol objects for C++ that allows multiple communcation objects
