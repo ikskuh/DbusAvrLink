@@ -158,6 +158,8 @@ int main(int argc, char ** argv)
 	
 	transmit(file);
 	
+	ti83f_release(file);
+	
 	close(serialPort);
 	
 	return EXIT_SUCCESS;

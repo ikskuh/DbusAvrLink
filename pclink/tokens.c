@@ -276,7 +276,7 @@ void detokenize(char * dst, uint8_t const * src, int len)
 				*dst++ = 0;
 				return;
 			case 0x5C:
-				sprintf(temp, "[%c]", 'A' + *src++);
+				sprintf(temp, "[%c]", 'A' + (*(++src)));
 				tok = temp;
 				break;
 			case 0x5D:
@@ -295,12 +295,58 @@ void detokenize(char * dst, uint8_t const * src, int len)
 				}
 				break;
 			case 0x5E:
-				// Ignore tokens
+				switch(*(++src)) {
+					case 0x10: tok="Y₁"; break;
+					case 0x11: tok="Y₂"; break;
+					case 0x12: tok="Y₃"; break;
+					case 0x13: tok="Y₄"; break;
+					case 0x14: tok="Y₅"; break;
+					case 0x15: tok="Y₆"; break;
+					case 0x16: tok="Y₇"; break;
+					case 0x17: tok="Y₈"; break;
+					case 0x18: tok="Y₉"; break;
+					case 0x19: tok="Y₀"; break;
+					
+					// Insert more here...
+					
+					
+					default:tok="??"; break;
+				}
 				break;
 			case 0x60:
+				switch(*(++src)) {
+					case 0: tok = "Pic1"; break;
+					case 1: tok = "Pic2"; break;
+					case 2: tok = "Pic3"; break;
+					case 3: tok = "Pic4"; break;
+					case 4: tok = "Pic5"; break;
+					case 5: tok = "Pic6"; break;
+					case 6: tok = "Pic7"; break;
+					case 7: tok = "Pic8"; break;
+					case 8: tok = "Pic9"; break;
+					case 9: tok = "Pic0"; break;
+					default:tok = "Pic?"; break;
+				}
+				break;
 			case 0x61:
+				switch(*(++src)) {
+					case 0: tok = "Gdb1"; break;
+					case 1: tok = "Gdb2"; break;
+					case 2: tok = "Gdb3"; break;
+					case 3: tok = "Gdb4"; break;
+					case 4: tok = "Gdb5"; break;
+					case 5: tok = "Gdb6"; break;
+					case 6: tok = "Gdb7"; break;
+					case 7: tok = "Gdb8"; break;
+					case 8: tok = "Gdb9"; break;
+					case 9: tok = "Gdb0"; break;
+					default:tok = "Gdb?"; break;
+				}
+				break;
 			case 0x62:
 			case 0x63:
+				++src;
+				tok = "‹??›";
 				break;
 			case 0xAA:
 				switch(*(++src)) {
