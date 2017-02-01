@@ -49,11 +49,9 @@ bool receivePacket(struct packet * packet)
 			readabs(serialPort, packet->data, packet->length);
 			uint16_t cs0 = calculateCheckSum(packet->data, packet->length);
 			readabs(serialPort, &packet->checksum, 2);
-			
 			if(cs0 != packet->checksum) {
 				error_message("Invalid Checksum: %04X ≠ %04X\n", packet->checksum, cs0);
 			}
-			
 			return (cs0 == packet->checksum);
 		}
 		default:

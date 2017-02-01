@@ -10,29 +10,13 @@
 #include "debug.h"
 #include "io.h"
 #include "tty.h"
+#include "ti83f.h"
 
-void transmit()
+void transmit(struct ti83f_file * file)
 {
 	struct packet packet;
 	
-	struct{
-		uint16_t size;
-		uint8_t msg[16];
-	} msg = {
-		0x0010,
-		"0123456789ABCDEF",
-	};
-	
-	struct varheader header =
-	{
-		msg.size + 2,
-		0x05, // Program
-		{ 'A', 'B', 'C', 0x00 },
-		0x00,
-		0x00,
-	};
-	
-	error_message("Trying to send prgmABC\n");
+	LOG("Query calculator.\n");
 	
 	// Query if we have a calc at the other side... :)
 	sendPacket(0x83, 0x68, NULL, 0);
@@ -46,155 +30,73 @@ void transmit()
 		return;
 	}
 	
-	sendPacket(0x73, 0x06, &header, sizeof header);
-	
-	if(receivePacket(&packet) == false) {
-		error_message("Failed to receive packet.\n");
-		return;
-	}
-	if(packet.command != 0x56) {
-		error_message("No VAR-ACK\n");
-		return;
-	}
-	
-	if(receivePacket(&packet) == false) {
-		error_message("Failed to receive packet.\n");
-		return;
-	}
-	if(packet.command != 0x09) {
-		error_message("No VAR-CTS\n");
-		return;
-	}
-	// ACK-CTS
-	sendPacket(0x73, 0x56, NULL, 0);
-	
-	// Send Data here
-	sendPacket(0x73, 0x15, &msg, sizeof msg);
-	
-	if(receivePacket(&packet) == false) {
-		error_message("Failed to receive packet.\n");
-		return;
-	}
-	if(packet.command != 0x56) {
-		error_message("No DATA-ACK\n");
-		return;
-	}
-	
-	
-	// End of Transmittion
-	sendPacket(0x73, 0x92, NULL, 0);
-	
-	if(receivePacket(&packet) == false) {
-		error_message("Failed to receive packet.\n");
-		return;
-	}
-	if(packet.command != 0x56) {
-		error_message("No EOT-ACK\n");
-		return;
-	}
-	
-	error_message("Success!\n");
-}
-
-void debug()
-{
-	struct packet packet;
-	int i = 0;
-	while(true)
+	for(uint32_t i = 0; i < file->length; i++)
 	{
+		struct ti83f_entry * entry = &file->entries[i];
+		
+		struct varheader header =
+		{
+			entry->size,
+			entry->type,
+			{ 0x00 },
+			0x00,
+			entry->flags,
+		};
+		memcpy(header.name, entry->name, 8);
+		
+		char name[128];
+		detokenize(name, header.name, 8);
+		
+		LOG("Transmit file(%02X) %s\n", header.type, name);
+		
+		sendPacket(0x73, 0x06, &header, sizeof header);
+		
 		if(receivePacket(&packet) == false) {
-			error_message("Invalid packet :(\n");
-			continue;
+			error_message("Failed to receive packet.\n");
+			return;
+		}
+		if(packet.command != 0x56) {
+			error_message("No VAR-ACK\n");
+			return;
 		}
 		
-		printf("Packet %4d:\n", ++i);
-		dumpPacket(&packet);
-		switch(packet.command) {
-			case 0x06:
-			case 0x88:
-			case 0xA2:
-			case 0xC9:
-				printf("Var Header:\n");
-				dumpHeader(packet.data);
+		LOG("Wait for CTS...\n");
+		
+		do
+		{
+			if(receivePacket(&packet) == false) {
+				error_message("Failed to receive packet.\n");
+				return;
+			}
+			LOG("Got packet(%02X)\n", packet.command);
+			if(packet.command == 0x09) {
 				break;
+			}
+			error_message("No VAR-CTS\n");
+		} while(true);
+		
+		// ACK-CTS
+		sendPacket(0x73, 0x56, NULL, 0);
+		
+		LOG("Send data...\n");
+		
+		// Send Data here
+		sendPacket(0x73, 0x15, entry->data, entry->size);
+		
+		if(receivePacket(&packet) == false) {
+			error_message("Failed to receive packet.\n");
+			return;
+		}
+		if(packet.command != 0x56) {
+			error_message("No DATA-ACK\n");
+			return;
 		}
 	}
-}
-
-void transmitSilent()
-{
-	struct packet packet;
 	
-	struct{
-		uint16_t size;
-		uint8_t msg[16];
-	} msg = {
-		0x0010,
-		"0123456789ABCDEF",
-	};
+	LOG("End of Transmission...\n");
 	
-	struct varheader header =
-	{
-		msg.size + 2,
-		0x05, // Program
-		{ 'A', 'B', 'C', 0x00 },
-		0x00,
-		0x00,
-	};
-	
-	error_message("Trying to send prgmABC silently \n");
-	
-	// Query if we have a calc at the other side... :)
-	sendPacket(0x23, 0x68, NULL, 0);
-	
-	if(receivePacket(&packet) == false) {
-		error_message("Failed to receive packet.\n");
-		return;
-	}
-	if(packet.machine != 0x73 || packet.command != 0x56) {
-		error_message("No RDY-ACK\n");
-		return;
-	}
-	
-	sendPacket(0x23, 0xC9, &header, sizeof header);
-	
-	debug();
-	
-	if(receivePacket(&packet) == false) {
-		error_message("Failed to receive packet.\n");
-		return;
-	}
-	if(packet.command != 0x56) {
-		error_message("No VAR-ACK\n");
-		return;
-	}
-	
-	if(receivePacket(&packet) == false) {
-		error_message("Failed to receive packet.\n");
-		return;
-	}
-	if(packet.command != 0x09) {
-		error_message("No VAR-CTS\n");
-		return;
-	}
-	// ACK-CTS
-	sendPacket(0x23, 0x56, NULL, 0);
-	
-	// Send Data here
-	sendPacket(0x23, 0x15, &msg, sizeof msg);
-	
-	if(receivePacket(&packet) == false) {
-		error_message("Failed to receive packet.\n");
-		return;
-	}
-	if(packet.command != 0x56) {
-		error_message("No DATA-ACK\n");
-		return;
-	}
-	
-	
-	// End of Transmittion
-	sendPacket(0x23, 0x92, NULL, 0);
+	// End of Transmission
+	sendPacket(0x73, 0x92, NULL, 0);
 	
 	if(receivePacket(&packet) == false) {
 		error_message("Failed to receive packet.\n");
@@ -211,13 +113,28 @@ void transmitSilent()
 int main(int argc, char ** argv)
 {
 	char const * portName = "/dev/ttyUSB1";
+	char const * sendFile = "run.8xp";
+	
+	struct ti83f_file * file;
+	
+	FILE * f = fopen(sendFile, "rb");
+	file = ti83f_load(f);
+	fclose(f);
+	
+	if(file == NULL) {
+		error_message("Could not read %s\n", sendFile);
+		return EXIT_FAILURE;
+	}
 	
 	serialPort = ttyOpen (portName, B9600);
+	if(serialPort < 0) {
+		error_message("Failed to open serial port %s\n", portName);
+		return EXIT_FAILURE;
+	}
 	
-	// transmit();
-	// transmitSilent();
-	
-	debug();
+	transmit(file);
 	
 	close(serialPort);
+	
+	return EXIT_SUCCESS;
 }
