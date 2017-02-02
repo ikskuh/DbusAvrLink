@@ -18,6 +18,10 @@ int main(int argc, char ** argv)
 	char const * portName = "/dev/ttyUSB1";
 	
 	serialPort = ttyOpen(portName, B9600);
+	if(serialPort < 0) {
+		error_message("Failed to open serial port %s\n", portName);
+		exit(EXIT_FAILURE);
+	}
 	
 	bool success;
 	struct packet packet;
