@@ -28,3 +28,14 @@ uint16_t calculateCheckSum(void const * data, uint16_t length);
 void sendPacket(uint8_t machineId, uint8_t command, void const * data, uint16_t length);
 
 bool receivePacket(struct packet * packet);
+
+/**
+ * Sends an ACK with machine id 0x73
+ */
+void sendACK();
+
+/**
+ * Receives an ACK. If no ACK is received, the program
+ * will be quit.
+ */
+void receiveACK();

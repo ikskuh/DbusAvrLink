@@ -14,7 +14,7 @@
 #include "tty.h"
 #include "ti83f.h"
 
-void transmit(struct ti83f_file * file)
+void queryCalc()
 {
 	struct packet packet;
 	
@@ -25,12 +25,27 @@ void transmit(struct ti83f_file * file)
 	
 	if(receivePacket(&packet) == false) {
 		error_message("Failed to receive packet.\n");
-		return;
+		exit(EXIT_FAILURE);
 	}
-	if(packet.machine != 0x73 || packet.command != 0x56) {
+
+	if(packet.command != 0x56) {
 		error_message("No RDY-ACK\n");
-		return;
+		exit(EXIT_FAILURE);
 	}
+		
+	LOG("Calculator found: %2X\n", packet.machine);
+
+	if(packet.machine != 0x73) {
+		error_message("No TI83+\n");
+		exit(EXIT_FAILURE);
+	}
+}
+
+void transmit(struct ti83f_file * file)
+{
+	struct packet packet;
+	
+	queryCalc();
 	
 	for(uint32_t i = 0; i < file->length; i++)
 	{
@@ -49,7 +64,7 @@ void transmit(struct ti83f_file * file)
 		char name[128];
 		detokenize(name, header.name, 8);
 		
-		LOG("Transmit file(%02X) %s\n", header.type, name);
+		LOG("Transmit file(%02X) '%s'...\n", header.type, name);
 		
 		sendPacket(0x73, 0x06, &header, sizeof header);
 		
@@ -136,18 +151,119 @@ void transmit(struct ti83f_file * file)
 	error_message("Success!\n");
 }
 
+
+void transmitSilent(struct ti83f_file * file)
+{
+	if(file->length != 1) {
+		error_message("Groups can not be transmitted via silent link.\n");
+		exit(EXIT_FAILURE);
+	}
+	struct packet packet;
+	
+	queryCalc();
+	
+	struct ti83f_entry * entry = &file->entries[0];
+	
+	struct varheader header =
+	{
+		entry->size,
+		entry->type,
+		{ 0x00 },
+		0x00,
+		entry->flags,
+	};
+	memcpy(header.name, entry->name, 8);
+	
+	char name[128];
+	detokenize(name, header.name, 8);
+	
+	LOG("Transmit file(%02X) '%s' silently\n", header.type, name);
+	
+	sendPacket(0x23, 0xC9, &header, sizeof header);
+	
+	receiveACK();
+	
+	LOG("Wait for CTS...\n");
+	
+	int mode = 0;
+	do
+	{
+		if(receivePacket(&packet) == false) {
+			error_message("Failed to receive packet.\n");
+			return;
+		}
+		LOG("Got packet(%02X)\n", packet.command);
+		if(packet.command == 0x09) {
+			mode = 1; // transmit
+			break;
+		}
+		
+		if(packet.command == 0x36) {
+			// SKIP/EXIT
+			uint8_t code = *((uint8_t*)packet.data);
+			LOG("Rejection Code: %02X\n",code);
+			if(code == 0x02) {
+				mode = 2; // SKIP
+				break;
+			}
+			if(code == 0x01) {
+				mode = 3; // QUIT
+				break;
+			}
+		}
+		
+		error_message("No VAR-CTS\n");
+	} while(mode == 0);
+	
+	// ACK-CTS
+	sendPacket(0x23, 0x56, NULL, 0);
+	
+	if(mode == 1) // SEND
+	{
+		LOG("Send data...\n");
+		
+		// Send Data here
+		sendPacket(0x23, 0x15, entry->data, entry->size);
+		
+		receiveACK();
+	}
+	else
+	{
+		LOG("Calculator rejection!\n");
+		exit(EXIT_FAILURE);
+	}
+	
+	LOG("End of Transmission...\n");
+	
+	// End of Transmission
+	sendPacket(0x23, 0x92, NULL, 0);
+	
+	LOG("Done.\n");
+}
+
+char * pgmName;
+
+static void usage()
+{
+	printf("%s [-p serialPort] file\n", pgmName);
+	exit(EXIT_SUCCESS);
+}
+
 int main(int argc, char ** argv)
 {
+	pgmName = argv[0];
 	char const * portName = "/dev/ttyUSB1";
 	
 	int c;
-	while ((c = getopt (argc, argv, "hp:")) != -1)
+	bool silent = false;
+	while ((c = getopt (argc, argv, "shp:")) != -1)
 	{
 		switch (c)
 		{
-		case 'h':
-			printf("%s [-p serialPort] file\n", argv[0]);
-			exit(EXIT_SUCCESS);
+		case 'h': usage();
+		case 's':
+			silent = true;
+			break;
 		case 'p':
 			portName = optarg;
 			break;
@@ -167,8 +283,7 @@ int main(int argc, char ** argv)
 	}
 	
 	if(optind == argc) {
-		fprintf(stderr, "Input file required!\n");
-		exit(EXIT_FAILURE);
+		usage();
 	}
 	
 	if(optind < (argc - 1)) {
@@ -201,7 +316,11 @@ int main(int argc, char ** argv)
 		return EXIT_FAILURE;
 	}
 	
-	transmit(file);
+	if(silent) {
+		transmitSilent(file);
+	} else {
+		transmit(file);
+	}
 	
 	ti83f_release(file);
 	

@@ -5,6 +5,27 @@
 
 int serialPort = -1;
 
+void sendACK()
+{
+	sendPacket(0x73, 0x56, NULL, 0);
+}
+
+void receiveACK()
+{
+	struct packet packet;
+	if(receivePacket(&packet) == false) {
+		error_message("Failed to receive packet.\n");
+		exit(EXIT_FAILURE);
+	}
+	if(packet.machine != 0x73 || packet.command != 0x56) {
+		error_message("Did not receive ACK.\n");
+		if(packet.data) {
+			free(packet.data);
+		}
+		exit(EXIT_FAILURE);
+	}
+}
+
 void sendPacket(uint8_t machineId, uint8_t command, void const * data, uint16_t length)
 {
 	write(serialPort, &machineId, 1);
