@@ -3,13 +3,13 @@
 .org     progStart-2
 .db      $BB,$6D
 
-; Planned API:
 ; Put number of bytes to read in Ans, maximum are 255
 ; Call Asm(prgmRECEIVE)
 ; Get the received bytes as a list in Ans
 
-; #define SENDSTUB
+; #define RECEIVESTUB
 
+; Main entry point.
 main:
 	; Load the Ans name and find the variable
 	bcall(_AnsName)
@@ -117,13 +117,16 @@ _initlist:
 	inc hl
 	
 	djnz _initlist
-	
+
 _donelist:
 	
 	ret
 
+; Receives a byte
+; destroys: all
+; affects: receiveStatus, inbyte
 recByte:
-#ifndef SENDSTUB
+#ifndef RECEIVESTUB
 	AppOnErr(failByte)
 	bcall(_RecAByteIO)
 	ld (inbyte), a
@@ -138,18 +141,21 @@ recByte:
 #endif
 	ret
 
+; void failByte() { receiveStatus = 0; }
+; affects:  receiveStatus
+; destroys: a
 failByte:
 	ld a, 0
 	ld (receiveStatus), a
 	ret
 
-inbyte:
+inbyte:        ; The last byte that was received
 	.db $FF
-receiveStatus:
-	.db 1 ; If zero, sending has failed
-counter:
+receiveStatus: ; If zero, reception has failed
+	.db 1 
+counter:       ; A counter that will contain the number of bytes in buffer
 	.db 0
-buffer:
+buffer:        ; Reception buffer that will be filled with bytes
 	.block 256
 msgRead:
 	.db "R",0

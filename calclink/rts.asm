@@ -4,14 +4,9 @@
 .db      $BB,$6D
 
 ; API:
-; Put Real,List or String into Ans
-; Call Asm(prgmSEND)
-; Get the number of sent bytes in Ans
+; Call Asm(prgmRTS)
+; Get Ans with 1 if a byte can be received, else get a 0.
 
-
-; Uncomment this for printing the byte values instead of sending them.
-; #define SENDSTUB 1
-	
 main:
 	in a, (0)
 	and $03

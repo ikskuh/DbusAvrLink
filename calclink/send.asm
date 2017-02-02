@@ -8,7 +8,6 @@
 ; Call Asm(prgmSEND)
 ; Get the number of sent bytes in Ans
 
-
 ; Uncomment this for printing the byte values instead of sending them.
 ; #define SENDSTUB 1
 	
@@ -24,7 +23,9 @@ _found:
 	; Filter out garbage of the file type,
 	and a,$1F
 	
-	; cast RealObj
+	; switch over a (var type)
+	
+	; case RealObj
 	cp RealObj
 	jp Z,isReal
 	
@@ -147,6 +148,14 @@ isString_stop:
 	jp finalize
 
 
+; sets ans according to failStatus, then quits
+finalize:
+	ld hl,bytesSent
+	ld a,(hl)
+	bcall(_SetXXOP1)
+	bcall(_StoAns)
+	ret
+
 quitWithMessage:
 puts:
 	bcall(_PutS)
@@ -154,6 +163,8 @@ puts:
 	ret
 
 ; a sendByte(uint8_t a) { try { sendAByte(); return 1; } catch { return 0; } }
+; affects:  failStatus
+; destroys: all
 sendByte:
 #ifndef SENDSTUB
 	AppOnErr(failByte)
@@ -172,30 +183,26 @@ sendByte:
 	ret
 
 ; void failByte() { failStatus = 0; }
+; destroys: a
+; affects:  failStatus
 failByte:
-	ld hl,failStatus
-	ld (hl),0
+	ld a, 0
+	ld (failStatus),0
 	ret
 
+; void incSent() { bytesSent++; }
+; destroys: a
+; affects:  bytesSent
 incSent:
-	ld hl, bytesSent
-	ld a,(hl)
+	ld a,(bytesSent)
 	inc a
-	ld (hl),a
+	ld (bytesSent),a
 	ret
 
-; sets ans according to failStatus, then quits
-finalize:
-	ld hl,bytesSent
-	ld a,(hl)
-	bcall(_SetXXOP1)
-	bcall(_StoAns)
-	ret
-
-bytesSent:
+bytesSent:  ; Number of bytes sent.
 	.db 0
 	
-failStatus:
+failStatus: ; If 0, the sending of a byte has failed
 	.db 1
 	
 msgNotFound:
