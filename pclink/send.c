@@ -245,7 +245,7 @@ char * pgmName;
 
 static void usage()
 {
-	printf("%s [-p serialPort] file\n", pgmName);
+	printf("%s [-p serialPort] [-s] file\n", pgmName);
 	exit(EXIT_SUCCESS);
 }
 
