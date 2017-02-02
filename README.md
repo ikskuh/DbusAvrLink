@@ -55,11 +55,15 @@ If it is zero, the transmission failed.
 Another tool for the calculator that allows receiving a given number of bytes from the
 link port.
 
-**API**:
+**API:**
 
 `prgmRECEIVE` takes the max. number of bytes to receive in `Ans`. After receiving
 either the given number of bytes or the system times out, the data will be returned in
 `Ans` as a *list* containing all bytes received.
+
+*Note:* If nothing was received, an empty list is returned. This can lead to the error
+`Invalid Dim` when trying to access the list. Store into list variable and then check with
+`dim(Ans)>0` first.
 
 ## See Also
 
