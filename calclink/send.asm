@@ -18,9 +18,7 @@ main:
 	bcall(_FindSym)
 	jr NC, _found
 	
-	; Quit with a "not found" message
-	ld hl, msgNotFound
-	jp quitWithMessage
+	bcall(_ErrUndefined)
 	
 _found:
 	; Filter out garbage of the file type,
@@ -38,9 +36,7 @@ _found:
 	cp StrngObj
 	jp Z,isString
 	
-	; default:
-	ld hl,msgNotSupported
-	jp quitWithMessage
+	bcall(_ErrDataType)
 
 isReal:
 
@@ -163,8 +159,7 @@ sendByte:
 	AppOnErr(failByte)
 	bcall(_SendAByte)
 	AppOffErr
-	ld hl,failStatus
-	ld a,(hl)
+	ld a,(failStatus)
 #else
 	AppOnErr(failByte)
 	ld h,0
