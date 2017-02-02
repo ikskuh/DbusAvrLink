@@ -51,6 +51,8 @@ _loop:
 	pop bc
 	pop hl
 	
+	ld a,(receiveStatus)
+	cp 0
 	jr Z,_done ; when failed, quit
 	
 	ld a, (inbyte)
@@ -126,8 +128,6 @@ recByte:
 	bcall(_RecAByteIO)
 	ld (inbyte), a
 	AppOffErr
-	ld a,(receiveStatus)
-	cp 0
 #else
 	AppOnErr(failByte)
 	ld hl, msgRead
@@ -135,7 +135,6 @@ recByte:
 	AppOffErr
 	ld a,$FF
 	ld (inbyte), a
-	cp $FF
 #endif
 	ret
 
