@@ -17,8 +17,8 @@ void receiveACK()
 		error_message("Failed to receive packet.\n");
 		exit(EXIT_FAILURE);
 	}
-	if(packet.machine != 0x73 || packet.command != 0x56) {
-		error_message("Did not receive ACK.\n");
+	if(packet.command != 0x56) {
+		error_message("Did not receive ACK, but %02X.\n", (int)packet.command);
 		if(packet.data) {
 			free(packet.data);
 		}

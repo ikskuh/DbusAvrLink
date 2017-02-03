@@ -16,13 +16,13 @@
 
 /**
  * TODO:
- * - Implement "silent receive"
- *   - Implement "tokenizer" mode that will create a calculator string
- * - Implement receive-to-file
+ * - Implement "tokenizer" mode that will create a calculator string
+ * - Add getopt argument setup.
  */
 
 int main(int argc, char ** argv)
 {
+	bool silent = true;
 	char const * portName = "/dev/ttyUSB1";
 	char const * outputFile = "received.8xg"; // By default, receive into a group file.
 	
@@ -41,6 +41,19 @@ int main(int argc, char ** argv)
 	struct ti83f_entry * results = NULL;
 	
 	struct varheader latestHeader;
+	
+	if(silent)
+	{
+		latestHeader.size = 0;
+		latestHeader.version = 0;
+		latestHeader.type2 = 0;
+		latestHeader.type = 0x05; // Program
+		memset(latestHeader.name, 0, 8);
+		memcpy(latestHeader.name, "DEMO", 4);
+		sendPacket(0x03, 0xA2, &latestHeader, sizeof latestHeader);
+
+		receiveACK();
+	}
 	
 	bool receiving = true;
 	while(receiving)
@@ -92,9 +105,15 @@ int main(int argc, char ** argv)
 			case 0x92: // End Of transmittion
 			{
 				// ACK this shit
-				sendPacket(0x73, 0x56, NULL, 0);
+				sendACK();
 				receiving = false;
 				break; 
+			}
+			case 0x36: // EXIT
+			{
+				receiving = false;
+				sendACK();
+				break;
 			}
 			case 0x15: // DATA
 			{
@@ -106,12 +125,15 @@ int main(int argc, char ** argv)
 				results[count - 1].data  = packet.data;
 				results[count - 1].flags = (latestHeader.type2 & 0x80) ? TI83F_ARCHIVED : 0;
 				memcpy(results[count - 1].name, latestHeader.name, 8);
-				
+			
 				packet.data = NULL; // prevent deletion
 				packet.length = 0;
 				
 				// ACK Packet
 				sendPacket(0x73, 0x56, NULL, 0);
+				
+				if(silent) receiving = false;
+				
 				break;
 			}
 			case 0x56: // ACK
@@ -127,17 +149,24 @@ int main(int argc, char ** argv)
 		if(packet.data) free(packet.data);
 	}
 	
-	LOG("Transmission finished, now storing data...\n");
-	
-	struct ti83f_file file;
-	
-	sprintf(file.comment, "File created by %s.", argv[0]);
-	file.length = count;
-	file.entries = results;
-	
-	FILE * f = fopen(outputFile, "wb");
-	ti83f_store(f, &file);
-	fclose(f);
+	if(count > 0)
+	{
+		LOG("Transmission finished, now storing data...\n");
+		
+		struct ti83f_file file;
+		
+		sprintf(file.comment, "File created by %s.", argv[0]);
+		file.length = count;
+		file.entries = results;
+		
+		FILE * f = fopen(outputFile, "wb");
+		ti83f_store(f, &file);
+		fclose(f);
+	}
+	else
+	{
+		LOG("No files were transmitted, no output file generated.\n");
+	}
 	
 	LOG("Done.\n");
 	close(serialPort);
