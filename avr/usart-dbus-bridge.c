@@ -98,7 +98,8 @@ int main()
 	
 	while(1)
 	{
-		if(DBUS_CanReceive()) {
+		// It's important to wait for USART completion here!
+		if(DBUS_CanReceive() && USART_CanWrite()) {
 			uint8_t value = DBUS_Receive(&success);
 			if(success) {
 #ifdef USE_BINARY_PROTOCOL

@@ -52,13 +52,6 @@ void USART_Transmit( unsigned char data )
 {
 	txbuffer[(tx_write++) % sizeof(txbuffer)] = data;
 	UCSRB |= (1 << UDRIE);
-	
-	/*
-	// Wait for empty transmit buffer 
-	while ( !( UCSRA & (1<<UDRE)) ;
-	// Put data into buffer, sends the data
-	UDR = data;
-	*/
 }
 
 unsigned char USART_Receive( void )
@@ -66,17 +59,15 @@ unsigned char USART_Receive( void )
 	while(rx_read == rx_write);
 	
 	return rxbuffer[(rx_read++) % sizeof(rxbuffer)];
-	
-	/*
-	// Wait for data to be received
-	while ( !(UCSRA & (1<<RXC)) );
-	// Get and return received data from buffer
-	return UDR;
-	*/
 }
 
 bool USART_CanRead(void)
 {
 	return rx_read != rx_write;
 	// return (UCSRA & (1<<RXC));
+}
+
+bool USART_CanWrite(void)
+{
+	return tx_read == tx_write;
 }

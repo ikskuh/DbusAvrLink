@@ -10,12 +10,21 @@
 #include "debug.h"
 #include "io.h"
 #include "tty.h"
+#include "ti83f.h"
 
-#define VERBOSE
+// #define VERBOSE
+
+/**
+ * TODO:
+ * - Implement "silent receive"
+ *   - Implement "tokenizer" mode that will create a calculator string
+ * - Implement receive-to-file
+ */
 
 int main(int argc, char ** argv)
 {
 	char const * portName = "/dev/ttyUSB1";
+	char const * outputFile = "received.8xg"; // By default, receive into a group file.
 	
 	serialPort = ttyOpen(portName, B9600);
 	if(serialPort < 0) {
@@ -26,21 +35,27 @@ int main(int argc, char ** argv)
 	bool success;
 	struct packet packet;
 	
-	printf("Waiting...\n");
+	LOG("Waiting for files...\n");
 	
-	while(true)
+	int count = 0;
+	struct ti83f_entry * results = NULL;
+	
+	struct varheader latestHeader;
+	
+	bool receiving = true;
+	while(receiving)
 	{
 		success = receivePacket(&packet);
 		
 #ifdef VERBOSE
-		printf("Packet:\n");
+		LOG("Packet:\n");
 		dumpPacket(&packet);
 		switch(packet.command) {
 			case 0x06:
 			case 0x88:
 			case 0xA2:
 			case 0xC9:
-				printf("Var Header:\n");
+				LOG("Var Header:\n");
 				dumpHeader(packet.data);
 				break;
 		}
@@ -59,9 +74,14 @@ int main(int argc, char ** argv)
 				break;
 			case 0x06: // Var Header
 			{
-				printf("Got VAR HDR, now ACK, CTS\n");
+				LOG("Got VAR HDR, now ACK, CTS\n");
 				
-				dumpHeader(packet.data);
+				memcpy(&latestHeader, packet.data, sizeof latestHeader);
+				
+				char name[128];
+				detokenize(name, latestHeader.name, 8);
+				
+				LOG("Received VAR header: %s\n", name);
 				
 				// Accept the variable header by saying:
 				// ACK, CTS
@@ -73,31 +93,23 @@ int main(int argc, char ** argv)
 			{
 				// ACK this shit
 				sendPacket(0x73, 0x56, NULL, 0);
-				printf("Done.\n");
+				receiving = false;
 				break; 
 			}
 			case 0x15: // DATA
 			{
-				printf("File Contents:\n");
+				LOG("Receive data...\n");
+				results = realloc(results, (++count) * sizeof(struct ti83f_entry));
 				
-				uint8_t * const data = packet.data;
-				for(int i = 0; i < packet.length; i++) {
-					printf(" %02X", data[i]);
-				}
-				printf("\n");
+				results[count - 1].type  = latestHeader.type;
+				results[count - 1].size  = packet.length;
+				results[count - 1].data  = packet.data;
+				results[count - 1].flags = (latestHeader.type2 & 0x80) ? TI83F_ARCHIVED : 0;
+				memcpy(results[count - 1].name, latestHeader.name, 8);
 				
-				printf("'");
-				dumpSafeString(packet.data, packet.length);
-				printf("'\n");
+				packet.data = NULL; // prevent deletion
+				packet.length = 0;
 				
-				static char msg[2048];
-				
-				detokenize(msg, (uint8_t*)packet.data + 2, packet.length - 2);
-				
-				printf("'");
-				printf("%s", msg);
-				printf("'\n");
-			
 				// ACK Packet
 				sendPacket(0x73, 0x56, NULL, 0);
 				break;
@@ -115,6 +127,19 @@ int main(int argc, char ** argv)
 		if(packet.data) free(packet.data);
 	}
 	
+	LOG("Transmission finished, now storing data...\n");
+	
+	struct ti83f_file file;
+	
+	sprintf(file.comment, "File created by %s.", argv[0]);
+	file.length = count;
+	file.entries = results;
+	
+	FILE * f = fopen(outputFile, "wb");
+	ti83f_store(f, &file);
+	fclose(f);
+	
+	LOG("Done.\n");
 	close(serialPort);
 }
 

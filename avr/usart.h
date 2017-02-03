@@ -9,3 +9,4 @@ void USART_Initialize(void);
 unsigned char USART_Receive( void );
 void USART_Transmit( unsigned char data );
 bool USART_CanRead(void);
+bool USART_CanWrite(void);

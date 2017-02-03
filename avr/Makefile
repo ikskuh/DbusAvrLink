@@ -4,10 +4,10 @@ FREQ=20000000
 
 FLAGS=-Wall -O3 -mmcu=$(MCU) -DF_CPU=$(FREQ)LL -I../include
 
-all: test.elf
+all: usart-dbus-bridge.elf
 
 
-test.elf: test.o usart.o dbus.o
+usart-dbus-bridge.elf: usart-dbus-bridge.o usart.o dbus.o
 	avr-gcc $(FLAGS) -o $@ $^
 	avr-size -C --mcu=$(MCU) $@
 
