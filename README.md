@@ -39,11 +39,9 @@ the default `ls` command delivered with GNU/Linux.
 
 ## calclink Toolset
 
-### <sub>prgm</sub>SEND
+### prgmSEND
 A small tool for the TI83+ that allows sending bytes from the calculators to
 another device.
-
-**API**:
 
 `prgmSEND` takes the value to send in `Ans`. It can either be a *real* value,
 the a single byte will be sent. If `Ans` is a *string*, it will be interpreted
@@ -53,12 +51,10 @@ list entry will be taken as a single byte and beeing sent.
 After sending, `prgmSEND` will put the number of successfully bytes sent into `Ans`.
 If it is zero, the transmission failed.
 
-### <sub>prgm</sub>RECEIVE
+### prgmRECEIVE
 
 Another tool for the calculator that allows receiving a given number of bytes from the
 link port.
-
-**API:**
 
 `prgmRECEIVE` takes the max. number of bytes to receive in `Ans`. After receiving
 either the given number of bytes or the system times out, the data will be returned in
