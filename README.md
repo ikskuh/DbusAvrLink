@@ -19,27 +19,27 @@ The current implementation provides two modes of operation:
 Each mode of operation is a synchronous mode with which only blocking
 communication can be achieved.
 
-## `pclink` Toolset
+## pclink Toolset
 The folder `pclink` contains some tools that implement a basic
 calculator communication toolset for sending and receiving data
 as well as transmitting programs in *Silent Mode* (planned).
 
-### `send`
-`send` will transfer one or more files to the calculator. Right now it can
+### ti-send
+`ti-send` will transfer one or more files to the calculator. Right now it can
 handle a single `.8x*` file, supports silent linking and has not that much
 error handling.
 
-### `receive`
-**Planned:** `receive` will receive one or more transmissions from the
+### ti-receive
+**Planned:** `ti-receive` will receive one or more transmissions from the
 calculator and store them into a file.
 
-### `ls`
-`ls` will list the calculators directory contents in a similar style to
+### ti-ls
+`ti-ls` will list the calculators directory contents in a similar style to
 the default `ls` command delivered with GNU/Linux.
 
-## `calclink` Toolset
+## calclink Toolset
 
-### `send`
+### <sub>prgm</sub>SEND
 A small tool for the TI83+ that allows sending bytes from the calculators to
 another device.
 
@@ -53,7 +53,7 @@ list entry will be taken as a single byte and beeing sent.
 After sending, `prgmSEND` will put the number of successfully bytes sent into `Ans`.
 If it is zero, the transmission failed.
 
-### `receive`
+### <sub>prgm</sub>RECEIVE
 
 Another tool for the calculator that allows receiving a given number of bytes from the
 link port.
