@@ -3,13 +3,16 @@
 #include <stddef.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
-static char const * normalTokens[256] = 
+#include "debug.h"
+
+static char const * tok_tbl[256] = 
 {
-	"", // 0
-	">DMS", // 1
-	">DEC", // 2
-	">FRAC", // 3
+	"NUL", // 0
+	"▸DMS", // 1
+	"▸DEC", // 2
+	"▸FRAC", // 3
 	"→", // 4
 	"BoxPlot", // 5
 	"[", // 6
@@ -98,14 +101,14 @@ static char const * normalTokens[256] =
 	"Y", // 89
 	"Z", // 90
 	"θ", // 91
-	"›5C‹", // 92
-	"›5D‹", // 93
-	"›5E‹", // 94
+	"▸5C‹", // 92
+	"▸5D‹", // 93
+	"▸5E‹", // 94
 	"prgm", // 95
-	"›60‹", // 96
-	"›61‹", // 97
-	"›62‹", // 98
-	"›63‹", // 99
+	"▸60‹", // 96
+	"▸61‹", // 97
+	"▸62‹", // 98
+	"▸63‹", // 99
 	"Radian", // 100
 	"Degree", // 101
 	"Normal", // 102
@@ -132,7 +135,7 @@ static char const * normalTokens[256] =
 	"IndpntAsk", // 123
 	"DependAuto", // 124
 	"DependAsk", // 125
-	"›7E‹", // 126
+	"▸7E‹", // 126
 	"☐", // 127
 	"+", // 128???
 	"⁺", // 129
@@ -176,7 +179,7 @@ static char const * normalTokens[256] =
 	"Tangent(", // 167
 	"DrawInv ", // 168
 	"DrawF ", // 169
-	"›AA‹", // 170
+	"▸AA‹", // 170
 	"rand", // 171
 	"π", // 172
 	"getKey", // 173
@@ -193,7 +196,7 @@ static char const * normalTokens[256] =
 	"not(",
 	"iPart(",
 	"fPart(",
-	"›BB‹",
+	"▸BB‹",
 	"√(",
 	"³√(",
 	"ln(",
@@ -264,111 +267,123 @@ static char const * normalTokens[256] =
 	"LinReg(ax+b)", // 240", // 255
 };
 
+
+char const * tok_tbl0x5C[] = {
+	"[A]", "[B]", "[C]", "[D]", "[E]", "[F]", "[G]", "[H]", "[I]", "[J]" 
+};
+char const * tok_tbl0x5D[] = {
+	"L₁", "L₂", "L₃", "L₄", "L₅", "L₆", "L₇", "L₈", "L₉", "L₀"
+};
+char const * tok_tbl0x5E[] = {
+	"·", "·", "·", "·", "·", "·", "·", "·", "·", "·", "·", "·", "·", "·", "·", "·",
+	"Y₁", "Y₂", "Y₃", "Y₄", "Y₅", "Y₆", "Y₇", "Y₈", "Y₉", "Y₀", "·", "·", "·", "·", "·", "·",
+	"X₁ₜ", "Y₁ₜ", "X₂ₜ", "Y₂ₜ", "X₃ₜ", "Y₃ₜ", "X₄ₜ", "Y₄ₜ", "X₅ₜ", "Y₅ₜ", "X₆ₜ", "Y₆ₜ", "·","·","·","·",
+	"·", "·", "·", "·", "·", "·", "·", "·", "·", "·", "·", "·", "·", "·", "·", "·",
+	"·", "·", "·", "·", "·", "·", "·", "·", "·", "·", "·", "·", "·", "·", "·", "·",
+	"r₁", "r₂", "r₃", "r₄", "r₅", "r₆", "·","·","·","·","·","·","·","·","·","·",
+	"·", "·", "·", "·", "·", "·", "·", "·", "·", "·", "·", "·", "·", "·", "·", "·",
+	"·", "·", "·", "·", "·", "·", "·", "·", "·", "·", "·", "·", "·", "·", "·", "·",
+	"·", "·", "·", "·", "·", "·", "·", "·", "·", "·", "·", "·", "·", "·", "·", "·",
+	"u", "v",
+};
+char const * tok_tbl0x60[] = {
+	"Pic0", "Pic1", "Pic2", "Pic3", "Pic4", "Pic5", "Pic6", "Pic7", "Pic8", "Pic9", "Pic0"
+};
+char const * tok_tbl0x61[] = {
+	"GDB0", "GDB1", "GDB2", "GDB3", "GDB4", "GDB5", "GDB6", "GDB7", "GDB8", "GDB9", "GDB0"
+};
+char const * tok_tbl0x62[] = {
+	"·", "RegEq", "n", "x̅", "Σx", "Σx²", "Sx", "σx", "minX", "maxX", "minY", "maxY", "y̅", "Σy", "Σy²", "Sy", "σy", "Σxy", "r", "Med", "Q₁", "Q₃", "a", "b", "c", "d", "e", "x₁", "x₂", "x₃", "y₁", "y₂", "y₃", "𝑛", "p", "z", "t", "χ²", "𝔽", "df", "p̂", "p̂₁", "p̂₂", "x̅₁", "Sx₁", "n₁", "x̅₂", "Sx₂", "n₂", "Sxp", "lower", "upper", "s", "r²", "R²", "df", "SS", "MS", "df", "SS", "MS"
+};
+char const * tok_tbl0x63[] = {
+	"ZXscl", "ZYscl", "Xscl", "Yscl", "U𝑛Start", "V𝑛Start", "U𝑛₋₁", "V𝑛₋₁", "ZU𝑛Start", "ZV𝑛Start", "Xmin", "Xmax", "Ymin", "Ymax", "Tmin", "Tmax", "θmin", "θmax", "ZXMin", "ZXmax", "ZYmin", "ZYmax", "Zθmin", "Zθmax", "ZTmin", "ZTmax", "TblMin", "𝑛Min", "Z𝑛Min", "𝑛Max", "Z𝑛max", "𝑛Start", "Z𝑛Start", "ΔTbl", "Tstep", "θstep", "ZTstep", "Zθstep", "ΔX", "ΔY", "XFact", "YFact", "TblInput", "ℕ", "I%", "PV", "PMT", "FV", "Xres", "ZXres"
+};
+char const * tok_tbl0xAA[] = {
+	"Str0", "Str1", "Str2", "Str3", "Str4", "Str5", "Str6", "Str7", "Str8", "Str9", "Str0"
+};
+char const * tok_tbl0x7E[] = {
+	"Sequential", "Simul", "PolarGC", "RectGC", "CoordOn", "CoordOff", "Connected", "Dot", "AxesOn", "AxesOff", "GridOn", "GridOff",
+	"uvAxes", "vwAxes", "uwAxes",
+};
+char const * tok_tbl0xBB[] = {
+	"npv(", "irr(", "bal(", "ΣPrn(", "ΣInt(", "▸Nom(", "▸Eff(", "dbd(", "lcm(", "gcd(", "randInt(", "randBin(", "sub(", "stdDev(", "variance(", "inString(", 
+	"normalcdf(", "invNorm(", "tcdf(", "χ²cdf(", "𝔽cdf(", "binompdf(", "binomcdf(", "poissonpdf(", "poissoncdf(", "geometpdf(", "geometcdf(", "normalpdf(", "tpdf(", "χ²pdf(", "𝔽pdf(", "randNorm(",
+	"tvm_pmt", "tvm_I%", "tvm_PV", "tvm_ℕ", "tvm_FV", "conj(", "real(", "imag(", "angle(", "cumSum(", "expr(", "length(", "ΔList(", "ref(", "rref(", "▸Rect", 
+	"▸Polar", "e", "SinReg ", "Logistic ", "LinRegTTest ", "ShadeNorm(", "Shade_t(", "Shadeχ²(", "Shade𝔽(", "Matr▸list", "List▸matr", "Z-Test(", "T-Test ", "2-SampZTest(", "1-PropZTest(", "2-PropZTest(", 
+	"χ²-Test(", "ZInterval ", "2-SampZInt(", "1-PropZInt(", "2-PropZInt(", "GraphStyle(", "2-SampTTest ", "2-Samp𝔽Test ", "TInterval ", "2-SampTInt ", "SetUpEditor ", "PMT_End", "PMT_Bgn", "Real", "re^θi", "a+bi", 
+	"ExprOn", "ExprOff", "ClrAllLists", "GetCalc(", "DelVar ", "Equ▸String(", "String>Equ(", "Clear Entries", "Select(", "ANOVA(", "ModBoxPlot", "NormProbPlot"
+};
+
+char const * tok_getFromTable(uint8_t index, char const ** table, size_t length)
+{
+	if(index >= length) {
+		error_message("Invalid token detected!\n");
+		exit(EXIT_FAILURE);
+	}
+	return table[index];
+}
+
+char const * tok_getTwoByte(uint8_t first, uint8_t second)
+{
+#define GET(X) case X: return tok_getFromTable(second, tok_tbl##X, sizeof(tok_tbl##X) / sizeof(tok_tbl##X[0]))
+	switch(first) {
+		GET(0x5C);
+		GET(0x5D);
+		GET(0x5E);
+		GET(0x60);
+		GET(0x61);
+		GET(0x62);
+		GET(0x63);
+		GET(0x7E);
+		GET(0xAA);
+		GET(0xBB);
+		default:
+			error_message("Invalid token detected: %02X%02X\n", (int)first, (int)second);
+			exit(EXIT_FAILURE);
+			return "??";
+	}
+}
+
+char const * tok_getOneByte(uint8_t first)
+{
+	return tok_tbl[first];
+}
+
+bool tok_isTwoByte(uint8_t tok)
+{
+	switch(tok) {
+		case 0x5C: return true;
+		case 0x5D: return true;
+		case 0x5E: return true;
+		case 0x60: return true;
+		case 0x61: return true;
+		case 0x62: return true;
+		case 0x63: return true;
+		case 0x7E: return true;
+		case 0xAA: return true;
+		case 0xBB: return true;
+		default: return false;
+	}
+}
+
 void detokenize(char * dst, uint8_t const * src, int len)
 {
-	static char temp[64];
 	for(int i = 0; i < len; i++)
 	{
 		char const * tok = NULL;
-		switch((uint8_t)*src)
-		{
-			case 0:
-				*dst++ = 0;
-				return;
-			case 0x5C:
-				sprintf(temp, "[%c]", 'A' + (*(++src)));
-				tok = temp;
-				break;
-			case 0x5D:
-				switch(*(++src)) {
-					case 0: tok = "L₁"; break;
-					case 1: tok = "L₂"; break;
-					case 2: tok = "L₃"; break;
-					case 3: tok = "L₄"; break;
-					case 4: tok = "L₅"; break;
-					case 5: tok = "L₆"; break;
-					case 6: tok = "L₇"; break;
-					case 7: tok = "L₈"; break;
-					case 8: tok = "L₉"; break;
-					case 9: tok = "L₀"; break;
-					default:tok = "Lₙ"; break;
-				}
-				break;
-			case 0x5E:
-				switch(*(++src)) {
-					case 0x10: tok="Y₁"; break;
-					case 0x11: tok="Y₂"; break;
-					case 0x12: tok="Y₃"; break;
-					case 0x13: tok="Y₄"; break;
-					case 0x14: tok="Y₅"; break;
-					case 0x15: tok="Y₆"; break;
-					case 0x16: tok="Y₇"; break;
-					case 0x17: tok="Y₈"; break;
-					case 0x18: tok="Y₉"; break;
-					case 0x19: tok="Y₀"; break;
-					
-					// Insert more here...
-					
-					
-					default:tok="??"; break;
-				}
-				break;
-			case 0x60:
-				switch(*(++src)) {
-					case 0: tok = "Pic1"; break;
-					case 1: tok = "Pic2"; break;
-					case 2: tok = "Pic3"; break;
-					case 3: tok = "Pic4"; break;
-					case 4: tok = "Pic5"; break;
-					case 5: tok = "Pic6"; break;
-					case 6: tok = "Pic7"; break;
-					case 7: tok = "Pic8"; break;
-					case 8: tok = "Pic9"; break;
-					case 9: tok = "Pic0"; break;
-					default:tok = "Pic?"; break;
-				}
-				break;
-			case 0x61:
-				switch(*(++src)) {
-					case 0: tok = "Gdb1"; break;
-					case 1: tok = "Gdb2"; break;
-					case 2: tok = "Gdb3"; break;
-					case 3: tok = "Gdb4"; break;
-					case 4: tok = "Gdb5"; break;
-					case 5: tok = "Gdb6"; break;
-					case 6: tok = "Gdb7"; break;
-					case 7: tok = "Gdb8"; break;
-					case 8: tok = "Gdb9"; break;
-					case 9: tok = "Gdb0"; break;
-					default:tok = "Gdb?"; break;
-				}
-				break;
-			case 0x62:
-			case 0x63:
-				++src;
-				tok = "‹??›";
-				break;
-			case 0xAA:
-				switch(*(++src)) {
-					case 0: tok = "Str1"; break;
-					case 1: tok = "Str2"; break;
-					case 2: tok = "Str3"; break;
-					case 3: tok = "Str4"; break;
-					case 4: tok = "Str5"; break;
-					case 5: tok = "Str6"; break;
-					case 6: tok = "Str7"; break;
-					case 7: tok = "Str8"; break;
-					case 8: tok = "Str9"; break;
-					case 9: tok = "Str0"; break;
-					default:tok = "Str?"; break;
-				}
-				break;
-			case 0xBB:
-				break;
-			default:
-				tok = normalTokens[*src];
-				break;
+		uint8_t tok1 = *src;
+		
+		if(tok1 == 0) {
+			break;
 		}
+		
+		if(tok_isTwoByte(tok1)) {
+			uint8_t tok2 = *(++src);
+			tok = tok_getTwoByte(tok1, tok2);
+		} else {
+			tok = tok_getOneByte(tok1);
+		}
+		
 		if(tok != NULL) {
 			while(*tok) {
 					*dst++ = *tok++;

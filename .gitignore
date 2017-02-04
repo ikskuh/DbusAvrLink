@@ -35,6 +35,8 @@
 # Program FIles
 pclink/ti-receive
 pclink/ti-send
+pclink/ti-extract
+pclink/ti-tokenize
 pclink/ti-ls
 *.8x?
 *.lst

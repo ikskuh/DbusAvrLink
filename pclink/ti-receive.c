@@ -22,7 +22,7 @@
 
 int main(int argc, char ** argv)
 {
-	bool silent = true;
+	bool silent = false;
 	char const * portName = "/dev/ttyUSB1";
 	char const * outputFile = "received.8xg"; // By default, receive into a group file.
 	
@@ -49,7 +49,7 @@ int main(int argc, char ** argv)
 		latestHeader.type2 = 0;
 		latestHeader.type = 0x05; // Program
 		memset(latestHeader.name, 0, 8);
-		memcpy(latestHeader.name, "DEMO", 4);
+		memcpy(latestHeader.name, "TOKTEST", 7);
 		sendPacket(0x03, 0xA2, &latestHeader, sizeof latestHeader);
 
 		receiveACK();

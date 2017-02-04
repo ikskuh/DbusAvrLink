@@ -37,6 +37,15 @@ calculator and store them into a file.
 `ti-ls` will list the calculators directory contents in a similar style to
 the default `ls` command delivered with GNU/Linux.
 
+### ti-extract
+`ti-extract` is a tool that allows to extract the data stored in an `TI83F` file (`*.8x*`).
+It can be used to get the information stored in a program file.
+
+### ti-tokenize
+`ti-tokenize` is a tool that allows detokenization of a tokenized string.
+Not all tokens are supported yet, also the reverse mode (tokenization)
+is not supported.
+
 ## calclink Toolset
 
 ### prgmSEND

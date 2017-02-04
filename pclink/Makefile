@@ -1,7 +1,7 @@
 
 CFLAGS=-g
 
-all: ti-send ti-receive ti-ls
+all: ti-send ti-receive ti-ls ti-tokenize ti-extract
 
 %: %.c io.c tty.c debug.c tokens.c ti83f.c
 	gcc $(CFLAGS) -Wall -o $@ $^
