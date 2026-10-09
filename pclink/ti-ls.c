@@ -10,7 +10,8 @@
 #include "tokens.h"
 #include "debug.h"
 #include "io.h"
-#include "tty.h"
+
+#include <getopt.h>
 
 static void assertAck()
 {
@@ -139,15 +140,14 @@ int main(int argc, char ** argv)
 		}
 	}
 	
-	serialPort = ttyOpen (portName, B9600);
-	if(serialPort < 0) {
+	if(!io_open_usb(SILVERLINK_VID, SILVERLINK_PID)) {
 		error_message("Failed to open serial port %s\n", portName);
 		return EXIT_FAILURE;
 	}
 	
 	list();
 	
-	close(serialPort);
+	io_close();
 	
 	return EXIT_SUCCESS;
 }

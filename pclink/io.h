@@ -3,7 +3,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-extern int serialPort;
+enum {
+	SILVERLINK_VID = 0x0451, 
+	SILVERLINK_PID = 0xE001,
+};
 
 struct packet
 {
@@ -22,6 +25,12 @@ struct varheader
 	uint8_t version;
 	uint8_t type2;
 } __attribute__((packed));
+
+bool io_open_serial(char const * portName, int baud);
+
+bool io_open_usb(int vid, int pid);
+
+void io_close();
 
 uint16_t calculateCheckSum(void const * data, uint16_t length);
 

@@ -324,7 +324,7 @@ int main(int argc, char ** argv)
 	
 	ti83f_release(file);
 	
-	close(serialPort);
+	io_close();
 	
 	return EXIT_SUCCESS;
 }
