@@ -69,7 +69,7 @@ static void sendData(void const * data, uint16_t length)
 				&len,
 				5000             // timeout in ms
 			);
-			if(len < 0) {
+			if(rc != LIBUSB_SUCCESS) {
 				error_message("Failed to write stuff from usb=%s\n", fmt_usb_error(rc));
 				return;
 			}
@@ -117,7 +117,7 @@ static void readabs(void * buffer, size_t nBytes)
 				&len,
 				5000
 			);
-			if(rc != 0)
+			if(rc != LIBUSB_SUCCESS)
 			{
 				error_message("Failed to read stuff from usb=%s\n", fmt_usb_error(rc));
 				return;
@@ -212,7 +212,13 @@ bool io_open_usb(int vid, int pid)
 	}
 
 	// TODO: Error handling:
-	libusb_claim_interface(dev, 0);
+	int rc = libusb_claim_interface(dev, 0);
+	if(rc != LIBUSB_SUCCESS)
+	{
+		io_close();
+		error_message("Failed to claim usb interface: %s\n", fmt_usb_error(rc));
+		return false ;
+	}
 
 	return true;
 }
